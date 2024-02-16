@@ -13,7 +13,7 @@ library(devtools)
 ## 2. Download and isntall biolecter
 ```R
 devtools::install_github("farhadm1990/lambda_rector")
-library(lambda_rector)
+library(lambda.rector)
 ```
 
 ## 3. Rinning `lambda_rector` function
