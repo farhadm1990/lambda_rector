@@ -1,0 +1,13 @@
+Package: lambda.rector
+Title: Convert relative abunace count of 16S rRNA gene data into their copy-number
+Version: 0.0.0.9000
+Authors@R: 
+    person("Farhad", "M. Panah", , "farhad@food.ku.dk", role = c("aut", "cre"),
+           comment = c(ORCID = "https://orcid.org/0000-0002-6623-1528",
+           GITHUB = "https://github.com/farhadm1990"))
+Description: This package is created to correct the relative aboundance sequencing reads for their copy-number of 16S rRNA genes. It leverages the known loaded copy-number of a Lambda phage as standard.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
