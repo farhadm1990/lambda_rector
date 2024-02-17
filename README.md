@@ -1,7 +1,7 @@
 # Lambda Rector
 ## An R package to correct relatvie abundance  of sequeneincg reads into 16S rRNA gene copy-number based on an internal Lambda Phage standard.
 
-**NOTE: this package is only tunned for four filtersets, Biomass, pH, Riboflavine, and DO**
+**This is the supporting package for paper DOIXXXXX**
 # Installation
 
 ## 1. Isntall and library devtools pakcage on your machine
@@ -30,7 +30,16 @@ test = lambda_rector(
 
 # This will return a list of differnt phyloseq objects and saves the output plots
 ```
+## 3. Output examples
 
+![plot1](https://github.com/farhadm1990/lambda_rector/tree/main/pix/plot_without_bad_samples.jpeg)
 
+### Fig2. An example of filtering output of by the package on suspicious samples.
 
+![plot2](https://github.com/farhadm1990/lambda_rector/tree/main/pix/Order_relative.jpeg)
 
+### Fig3. Relative abundance of 16S rRNA gene sequencing reads at order level in different Mock and Lambda concentrations.
+
+![plot3](https://github.com/farhadm1990/lambda_rector/tree/main/pix/Order_copy_number.jpeg)
+
+### Fig3. 16S rRNA gene Copy-number corrected reads at order level in different Mock and Lambda concentrations.
