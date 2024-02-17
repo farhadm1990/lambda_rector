@@ -10,7 +10,7 @@ install.packages("devtools")
 library(devtools)
 ```
 
-## 2. Download and isntall biolecter
+## 2. Download and isntall `lambda_rector`
 ```R
 devtools::install_github("farhadm1990/lambda_rector")
 library(lambda.rector)
