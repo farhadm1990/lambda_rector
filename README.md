@@ -25,7 +25,7 @@ test = lambda_rector(
   negative_cont = NULL,
   negative_filt = TRUE,
   rare_depth = 10000,
-  taxa_level = "Kingdom"
+  taxa_level = "Order"
 )
 
 # This will return a list of differnt phyloseq objects and saves the output plots
