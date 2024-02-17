@@ -32,14 +32,14 @@ test = lambda_rector(
 ```
 ## 3. Output examples
 
-![plot1](https://github.com/farhadm1990/lambda_rector/tree/main/pix/plot_without_bad_samples.jpeg)
+![plot1](https://github.com/farhadm1990/lambda_rector/blob/main/pix/plot_without_bad_samples.jpeg)
 
 ### Fig2. An example of filtering output of by the package on suspicious samples.
 
-![plot2](https://github.com/farhadm1990/lambda_rector/tree/main/pix/Order_relative.jpeg)
+![plot2](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Order_relative.jpeg)
 
 ### Fig3. Relative abundance of 16S rRNA gene sequencing reads at order level in different Mock and Lambda concentrations.
 
-![plot3](https://github.com/farhadm1990/lambda_rector/tree/main/pix/Order_copy_number.jpeg)
+![plot3](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Order_copy_number.jpeg)
 
 ### Fig3. 16S rRNA gene Copy-number corrected reads at order level in different Mock and Lambda concentrations.
