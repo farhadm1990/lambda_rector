@@ -35,18 +35,22 @@ ps = phyloseq(otu_table(count, taxa_are_row = TRUE), tax_table(as(taxa, "matrix"
 
 ## 4. Rinning `lambda_rector` function
 ```R
-test = lambda_rector(
-  ps,
-  lamba_id = "Lambda",
-  out_path = "./",
-  negative_cont = NULL,
-  negative_filt = TRUE,
-  rare_depth = 10000,
-  taxa_level = "Species",
-  std_threshold = 1.4
+test_ps = lambda_rector(
+                        ps = ps, 
+                        negative_filt= TRUE, 
+                        negative_cont = c("BRK79", "BRK87", "BRK95"), 
+                        taxa_level = "Genus", 
+                        out_path = "./", 
+                        rare_depth = 10000,
+                        std_threshold = 1.49)
 )
 
 # This will return a list of differnt phyloseq objects and saves the output plots
+
+
+
+# Extracting the copy-corrected talbe
+cbind(sample_data(test_ps$copy_corrected_ps), test_ps$copy_corrected_matrix) %>% data.frame() %>% rownames_to_column("barcodes") %>% select(-loaded_copy_lambda, -samp_id, -volum_mock, -volum_lambda) %>% group_by(barcodes, lambda_ng_ul, mock_ng_ul) %>% summarise_all(mean) 
 ```
 ## 3. Output examples
 

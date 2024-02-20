@@ -11,6 +11,7 @@
 
 
 
+
 lambda_rector <- function(ps, 
                           lamba_id = "Lambda", 
                           out_path = "./", 
@@ -338,7 +339,7 @@ if(negative_filt == TRUE){
         
         suspect <- c(contam, negative_otu) %>% as.character()
 
-       suspect <- data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7]) %>% filter(Species !="Lambda") %>% select(suspected_otu) %>% pull() %>% as.character()
+       suspect <<- data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7]) %>% filter(Species !="Lambda") %>% select(suspected_otu) %>% pull() %>% as.character()
 }
 
 
@@ -513,14 +514,16 @@ if(consent4 == "y"){
 
 lambda_matrix = as(otu_table(glomed_ps)[taxa_names(glomed_ps) == "Lambda",] %>% t(), "matrix")
 samp_matrix = as(otu_table(glomed_ps)[taxa_names(glomed_ps) != "Lambda",] %>% t(), "matrix")
-copy_loaded = as(sample_data(glomed_ps) %>% data.frame() %>% select(loaded_copy_lambda), "matrix")
+copy_loaded = as(sample_data(glomed_ps) %>% data.frame() %>% select(loaded_copy_lambda) %>% rename( loaded_copy_lambda = "Lambda"), "matrix")
 
 
 temp <- apply(samp_matrix, 2, function(x){round(x * copy_loaded/ lambda_matrix)}) 
 rownames(temp) <- rownames(samp_matrix)
-# temp <- temp[rownames(copy_loaded)]
-# temp = as(cbind(temp, copy_loaded), "matrix")
+
+temp <- temp[rownames(copy_loaded),]
+temp <- as(cbind(temp, copy_loaded), "matrix")
 temp <-  na.omit(temp)
+temp <- as(temp, "matrix")
 
 copy_corrected_ps <- glomed_ps
 
@@ -583,7 +586,7 @@ pl_rel <- p1 + p2 + p3 + plot_layout(nrow = 3, widths = 10) + plot_annotation("P
 ggsave(plot =pl_rel, paste0(out_path,"/", taxa_level, "_relative.jpeg"), width = 15, height = 10, dpi =300)
 
 
-# Copy_corrected
+# Copy_corrected with  Lambda
 
 melt_df <- psmelt(copy_corrected_ps) %>% filter(lambda_ng_ul > 0, mock_ng_ul > 0.002) %>% select(OTU, Sample, Abundance, lambda_ng_ul, mock_ng_ul) %>% group_by(OTU, Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(abund = mean(Abundance), .groups = "drop") 
 
@@ -638,7 +641,63 @@ pl_cp = p1 + p2 + p3 + plot_layout(nrow = 3, widths = 10) + plot_annotation("16S
 
 ggsave(plot =pl_cp, paste0(out_path,"/", taxa_level, "_copy_number.jpeg"), width = 15, height = 10, dpi =300)
 
+# Copy_corrected without  Lambda
 
-  structure(list(copy_corrected_ps = copy_corrected_ps, ps_gloomed = glomed_ps, ps_rel = ps_rel, raw_ps = ps, suspected_samples = sus_samp))
+melt_df <- psmelt(copy_corrected_ps) %>% filter(lambda_ng_ul > 0, mock_ng_ul > 0.002, OTU !="Lambda") %>% select(OTU, Sample, Abundance, lambda_ng_ul, mock_ng_ul) %>% group_by(OTU, Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(abund = mean(Abundance), .groups = "drop") 
+
+melt_df$mock_ng_ul <- factor(melt_df$mock_ng_ul, levels = c(20,2,0.2,0.02), labels = unique(melt_df$mock_ng_ul))
+
+melt_df$lambda_ng_ul <- factor(melt_df$lambda_ng_ul, levels = c(1e-04, 1e-05, 1e-06), labels = unique(melt_df$lambda_ng_ul))
+
+lambda_con_1 <- unique(melt_df$lambda_ng_ul)[1]
+lambda_con_2 <- unique(melt_df$lambda_ng_ul)[2]
+lambda_con_3 <- unique(melt_df$lambda_ng_ul)[3]
+
+df1 = melt_df %>% filter(lambda_ng_ul == lambda_con_1)
+df2 = melt_df %>% filter(lambda_ng_ul == lambda_con_2)
+df3 = melt_df %>% filter(lambda_ng_ul == lambda_con_3)
+
+n = length(unique(melt_df$OTU))
+set.seed(1990)
+cols = sample(colors(), size = n, replace = F)
+
+p1 = df1 %>% ggplot() +
+    geom_col(aes(x = Sample, y = abund, fill = OTU), show.legend = F) + 
+    # facet_grid(mock_ng_ul ~ lambda_ng_ul, scales = "free", shrink = TRUE) +
+    facet_grid(glue("Lambda con: {lambda_ng_ul} ng")~ glue("Mock con: {mock_ng_ul} ng"), scales =  "free") + 
+    theme_bw( ) +
+    theme(axis.text.x = element_text(angle = 0), strip.text = element_text(color = "white", face = "bold"), strip.background = element_rect(fill = "#5e5e5e"))  +
+    scale_fill_manual(values = cols) +
+    labs(color = "Mock NG/UL", y = "", x = "") +  # Label for color legend
+    guides(color = guide_legend(override.aes = list(size = 4, alpha = 0.7))) 
+
+p2 = df2 %>% ggplot() +
+    geom_col(aes(x = Sample, y = abund, fill = OTU)) + 
+    # facet_grid(mock_ng_ul ~ lambda_ng_ul, scales = "free", shrink = TRUE) +
+    facet_grid(glue("Lambda con: {lambda_ng_ul} ng")~ glue("Mock con: {mock_ng_ul} ng"), scales =  "free") + 
+    theme_bw( ) +
+    theme(axis.text.x = element_text(angle = 0), strip.text = element_text(color = "white", face = "bold"), strip.background = element_rect(fill = "#5e5e5e"))  +
+    scale_fill_manual(values = cols) +
+    labs(color = "Mock NG/UL", y = "16S rRNA Copy-number of loaded Sample", x = "") +  # Label for color legend
+    guides(color = guide_legend(override.aes = list(size = 4, alpha = 0.7))) 
+
+
+p3 = df3 %>% ggplot() +
+    geom_col(aes(x = Sample, y = abund, fill = OTU), show.legend = F) + 
+    # facet_grid(mock_ng_ul ~ lambda_ng_ul, scales = "free", shrink = TRUE) +
+    facet_grid(glue("Lambda con: {lambda_ng_ul} ng")~ glue("Mock con: {mock_ng_ul} ng"), scales =  "free") + 
+    theme_bw( ) +
+    theme(axis.text.x = element_text(angle = 0), strip.text = element_text(color = "white", face = "bold"), strip.background = element_rect(fill = "#5e5e5e"))  +
+    scale_fill_manual(values = cols) +
+    labs(color = "Mock NG/UL", y = "") +  # Label for color legend
+      guides(color = guide_legend(override.aes = list(size = 4, alpha = 0.7))) 
+
+pl_cp = p1 + p2 + p3 + plot_layout(nrow = 3, widths = 10) + plot_annotation("16S rRNA Copy-number for loaded sample and Lambda in different mock and lambda concentrations.")
+
+ggsave(plot =pl_cp, paste0(out_path,"/", taxa_level, "_copy_number_noLambda.jpeg"), width = 15, height = 10, dpi =300)
+
+
+
+  structure(list(copy_corrected_ps = copy_corrected_ps, ps_gloomed = glomed_ps, ps_rel = ps_rel, raw_ps = ps, copy_corrected_matrix = temp))
 
 }
