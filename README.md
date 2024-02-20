@@ -1,5 +1,8 @@
+![plot1](https://github.com/farhadm1990/lambda_rector/blob/main/pix/logo.jpg)
+
+
 # Lambda Rector
-## An R package to correct relatvie abundance  of sequeneincg reads into 16S rRNA gene copy-number based on an internal Lambda Phage standard.
+### An R package to correct relatvie abundance  of sequeneincg reads into 16S rRNA gene copy-number based on an internal Lambda Phage standard.
 
 **This is the supporting package for paper DOIXXXXX**
 
@@ -43,7 +46,7 @@ test_ps = lambda_rector(
                         out_path = "./", 
                         rare_depth = 10000,
                         std_threshold = 1.49)
-)
+
 
 # This will return a list of differnt phyloseq objects and saves the output plots
 
