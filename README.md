@@ -4,8 +4,6 @@
 
 
 
-
-
 # Lambda Rector
 ### An R package to correct relatvie abundance  of sequeneincg reads into 16S rRNA gene copy-number based on an internal Lambda Phage standard.
 
