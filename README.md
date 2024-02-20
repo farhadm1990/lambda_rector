@@ -1,4 +1,7 @@
-<img width="600" height="600" src="https://raw.githubusercontent.com/farhadm1990/lambda_rector/main/pix/logo.jpg" alt="Logo">
+<div style="text-align: center;">
+    <img width="300" height="300" src="https://raw.githubusercontent.com/farhadm1990/lambda_rector/main/pix/logo.jpg" alt="Logo" style="margin: auto;">
+</div>
+
 
 
 
