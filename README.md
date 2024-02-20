@@ -50,8 +50,8 @@ test = lambda_rector(
 ```
 ## 3. Output examples
 
+![plot1](https://github.com/farhadm1990/lambda_rector/blob/main/pix/plot_with_bad_samples.jpeg)
 ![plot1](https://github.com/farhadm1990/lambda_rector/blob/main/pix/plot_without_bad_samples.jpeg)
-
 ### Fig1. An example of filtering output by the package on suspicious samples.
 
 ![plot2](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Order_relative.jpeg)
