@@ -6,6 +6,7 @@
 #' @param negative_filt Wheather data should be filtered based on negative control reads
 #' @param rare_depth Rarefaction depth
 #' @param taxa_level Taxonomic level to which analysis should be done.
+#' @param std_threshold The standard deviation threshold coefficient to find outlier samples withing each technical replicate group.
 #' @export
 
 
@@ -16,16 +17,18 @@ lambda_rector <- function(ps,
                           negative_cont = NULL,
                           negative_filt = TRUE, 
                           rare_depth = 10000, 
-                          taxa_level = "Kingdom"){
+                          taxa_level = "Kingdom", 
+                          std_threshold = 1.48){
                           
 
 ###############################################################################################
-# lambda_con_n: the name of the column that has lambda concentration values (required)
+# ps: a raw phyloseq object
 # lambda_id: the taxa name you have given to lambda during creating the phyloseq object (required)
-# sample_con: the name of the column that has loaded DNA sample concentration values (required)
 # Out_path: path to the output files
 # negative_cont: a vector of the barcode name of the negative control samples.
 # rare_depth: rarefaction depth.
+# taxa_level: taxonomic level on which your analysis will be based
+# std_threshold: standard deviation threshold coefficient for detecting outlier wihitn technical replicate groups
 ###############################################################################################
 
 
@@ -329,19 +332,20 @@ if(negative_filt == TRUE){
         # decontatamination by decontam
         sample_data(ps)$is_neg <- as.logical(ifelse(sample_names(ps) %in% negative_cont, TRUE, FALSE))
 
-        contam = isContaminant(ps, method = "prevalence", neg = "is_neg", threshold = 0.5) %>% filter(contaminant == TRUE) %>% rownames()
+        contam <<- isContaminant(ps, method = "prevalence", neg = "is_neg", threshold = 0.1) %>% filter(contaminant == TRUE) %>% rownames()
 
         negative_otu <<-  rownames(tax_table(ps)[colnames(ps@otu_table) %in% negative_cont,])
         
-        suspect <<- c(contam, negative_otu) %>% as.character()
+        suspect <- c(contam, negative_otu) %>% as.character()
 
-        
+       suspect <- data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7]) %>% filter(Species !="Lambda") %>% select(suspected_otu) %>% pull() %>% as.character()
 }
 
 
 message(glue("\n\nHere is the list for  {length(suspect)} detected suspected OTUs: \n"))
         
-df = data.frame(suspected_otu = suspect)
+df = data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7])
+
 print(df)
 flush.console()
 
@@ -454,7 +458,21 @@ ps_rel <- transform_sample_counts(glomed_ps, function(x){x/sum(x)})
 
 
 # Removing suspected samples within each lamgda concentration group
-sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0 ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop") %>% group_by(Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(groups = sum(mean)) %>% mutate(sanity = ifelse(groups <0.7, "Suspicous", "Okay")) %>% filter(sanity == "Suspicous") %>% select(Sample) %>% pull()
+
+std_dev_threshold <- std_threshold
+
+
+sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0, Kingdom == "Lambda" ) %>% 
+ group_by( lambda_ng_ul, mock_ng_ul, Kingdom) %>% 
+ arrange(desc(lambda_ng_ul)) %>% 
+ mutate( mean_abundance = mean(Abundance, na.rm = TRUE),
+          sd_abundance = sd(Abundance, na.rm = TRUE), 
+          is_outlier = abs(Abundance - mean_abundance) > (std_dev_threshold * sd_abundance)
+                ) %>% 
+        data.frame() %>% 
+        filter(is_outlier) %>% 
+        select(Sample)  %>% 
+        pull() %>% as.character()
 
 print(glue("{sus_samp} samples seem to be suspicous and I am going to remove them!\n But first take a look at them in {out_path}"))
 
@@ -468,7 +486,7 @@ ggsave(plot = p_with, paste0(out_path, "/plot_with_bad_samples.jpeg"), height = 
 
 print("Here is how your data looks like wihtout those samples.")
 
-p_without = psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0, !Sample %in% sus_samp ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom == "Lambda", "Lambda", "Sample")) %>% ggplot() + 
+p_without <- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0, !Sample %in% sus_samp ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom == "Lambda", "Lambda", "Sample")) %>% ggplot() + 
 geom_col(aes(x = Sample, y = mean, fill = Kingdom), position = "stack", show.legend = T) + 
 facet_grid(mock_ng_ul ~ lambda_ng_ul , scales = "free")  + theme_bw()+ 
 theme(axis.text.x = element_text(angle = 45, hjust = 1 )) + 
@@ -486,8 +504,8 @@ ps_rel <<- ps_rel
 # Removing suspected samples upon user's consent
 if(consent4 == "y"){
 
-  glomed_ps <<- subset_samples(glomed_ps, !sample_names(glomed_ps) %in% sus_samp)
-  ps_rel  <<- subset_samples(ps_rel, !sample_names(ps_rel) %in% sus_samp)
+  glomed_ps <- subset_samples(glomed_ps, !sample_names(glomed_ps) %in% sus_samp)
+  ps_rel  <- subset_samples(ps_rel, !sample_names(ps_rel) %in% sus_samp)
 }
 
 
@@ -511,15 +529,15 @@ otu_table(copy_corrected_ps) <- otu_table(t(temp), taxa_are_row = TRUE)
 # Visualizing the results relative abundance
 
 
-melt_df = psmelt(ps_rel) %>% filter(lambda_ng_ul > 0, mock_ng_ul > 0.002) %>% select(OTU, Sample, Abundance, lambda_ng_ul, mock_ng_ul) %>% group_by(OTU, Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(abund = sum(Abundance), .groups = "drop") 
+melt_df <- psmelt(ps_rel) %>% filter(lambda_ng_ul > 0, mock_ng_ul > 0.002) %>% select(OTU, Sample, Abundance, lambda_ng_ul, mock_ng_ul) %>% group_by(OTU, Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(abund = sum(Abundance), .groups = "drop") 
 
 melt_df$mock_ng_ul <- factor(melt_df$mock_ng_ul, levels = c(20,2,0.2,0.02), labels = unique(melt_df$mock_ng_ul))
 
 melt_df$lambda_ng_ul <- factor(melt_df$lambda_ng_ul, levels = c(1e-04, 1e-05, 1e-06), labels = unique(melt_df$lambda_ng_ul))
 
-lambda_con_1 = unique(melt_df$lambda_ng_ul)[1]
-lambda_con_2 = unique(melt_df$lambda_ng_ul)[2]
-lambda_con_3 = unique(melt_df$lambda_ng_ul)[3]
+lambda_con_1 <- unique(melt_df$lambda_ng_ul)[1]
+lambda_con_2 <- unique(melt_df$lambda_ng_ul)[2]
+lambda_con_3 <- unique(melt_df$lambda_ng_ul)[3]
 
 df1 = melt_df %>% filter(lambda_ng_ul == lambda_con_1)
 df2 = melt_df %>% filter(lambda_ng_ul == lambda_con_2)
@@ -560,22 +578,22 @@ p3 = df3 %>% ggplot() +
     labs(color = "Mock NG/UL", y = "") +  # Label for color legend
       guides(color = guide_legend(override.aes = list(size = 4, alpha = 0.7))) 
 
-pl_rel = p1 + p2 + p3 + plot_layout(nrow = 3, widths = 10) + plot_annotation("Proportion of reads for loaded sample and Lambda in different mock and lambda concentrations.")
+pl_rel <- p1 + p2 + p3 + plot_layout(nrow = 3, widths = 10) + plot_annotation("Proportion of reads for loaded sample and Lambda in different mock and lambda concentrations.")
 
 ggsave(plot =pl_rel, paste0(out_path,"/", taxa_level, "_relative.jpeg"), width = 15, height = 10, dpi =300)
 
 
 # Copy_corrected
 
-melt_df = psmelt(copy_corrected_ps) %>% filter(lambda_ng_ul > 0, mock_ng_ul > 0.002) %>% select(OTU, Sample, Abundance, lambda_ng_ul, mock_ng_ul) %>% group_by(OTU, Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(abund = mean(Abundance), .groups = "drop") 
+melt_df <- psmelt(copy_corrected_ps) %>% filter(lambda_ng_ul > 0, mock_ng_ul > 0.002) %>% select(OTU, Sample, Abundance, lambda_ng_ul, mock_ng_ul) %>% group_by(OTU, Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(abund = mean(Abundance), .groups = "drop") 
 
 melt_df$mock_ng_ul <- factor(melt_df$mock_ng_ul, levels = c(20,2,0.2,0.02), labels = unique(melt_df$mock_ng_ul))
 
 melt_df$lambda_ng_ul <- factor(melt_df$lambda_ng_ul, levels = c(1e-04, 1e-05, 1e-06), labels = unique(melt_df$lambda_ng_ul))
 
-lambda_con_1 = unique(melt_df$lambda_ng_ul)[1]
-lambda_con_2 = unique(melt_df$lambda_ng_ul)[2]
-lambda_con_3 = unique(melt_df$lambda_ng_ul)[3]
+lambda_con_1 <- unique(melt_df$lambda_ng_ul)[1]
+lambda_con_2 <- unique(melt_df$lambda_ng_ul)[2]
+lambda_con_3 <- unique(melt_df$lambda_ng_ul)[3]
 
 df1 = melt_df %>% filter(lambda_ng_ul == lambda_con_1)
 df2 = melt_df %>% filter(lambda_ng_ul == lambda_con_2)

@@ -11,7 +11,8 @@ lambda_rector(
   negative_cont = NULL,
   negative_filt = TRUE,
   rare_depth = 10000,
-  taxa_level = "Kingdom"
+  taxa_level = "Kingdom",
+  std_threshold = 1.48
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ lambda_rector(
 \item{rare_depth}{Rarefaction depth}
 
 \item{taxa_level}{Taxonomic level to which analysis should be done.}
+
+\item{std_threshold}{The standard deviation threshold coefficient to find outlier samples withing each technical replicate group.}
 }
 \description{
 Correcting for 16S rRNA copy-number based on Lambda phage standard.
