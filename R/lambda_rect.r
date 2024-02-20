@@ -10,7 +10,7 @@
 
 
 
-lambda_rector <- function(ps,
+lambda_rector <- function(ps, 
                           lamba_id = "Lambda", 
                           out_path = "./", 
                           negative_cont = NULL,
@@ -454,7 +454,7 @@ ps_rel <- transform_sample_counts(glomed_ps, function(x){x/sum(x)})
 
 
 # Removing suspected samples within each lamgda concentration group
-sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0 ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop") %>% group_by(Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(groups = sum(mean)) %>% mutate(sanity = ifelse(groups <0.8, "Suspicous", "Okay")) %>% filter(sanity == "Suspicous") %>% select(Sample) %>% pull()
+sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0 ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop") %>% group_by(Sample, lambda_ng_ul, mock_ng_ul) %>% summarise(groups = sum(mean)) %>% mutate(sanity = ifelse(groups <0.7, "Suspicous", "Okay")) %>% filter(sanity == "Suspicous") %>% select(Sample) %>% pull()
 
 print(glue("{sus_samp} samples seem to be suspicous and I am going to remove them!\n But first take a look at them in {out_path}"))
 
@@ -517,10 +517,13 @@ melt_df$mock_ng_ul <- factor(melt_df$mock_ng_ul, levels = c(20,2,0.2,0.02), labe
 
 melt_df$lambda_ng_ul <- factor(melt_df$lambda_ng_ul, levels = c(1e-04, 1e-05, 1e-06), labels = unique(melt_df$lambda_ng_ul))
 
+lambda_con_1 = unique(melt_df$lambda_ng_ul)[1]
+lambda_con_2 = unique(melt_df$lambda_ng_ul)[2]
+lambda_con_3 = unique(melt_df$lambda_ng_ul)[3]
 
-df1 = melt_df %>% filter(lambda_ng_ul == "1e-04")
-df2 = melt_df %>% filter(lambda_ng_ul == "1e-05")
-df3 = melt_df %>% filter(lambda_ng_ul == "1e-06")
+df1 = melt_df %>% filter(lambda_ng_ul == lambda_con_1)
+df2 = melt_df %>% filter(lambda_ng_ul == lambda_con_2)
+df3 = melt_df %>% filter(lambda_ng_ul == lambda_con_3)
 
 n = length(unique(melt_df$OTU))
 set.seed(1990)
@@ -570,10 +573,13 @@ melt_df$mock_ng_ul <- factor(melt_df$mock_ng_ul, levels = c(20,2,0.2,0.02), labe
 
 melt_df$lambda_ng_ul <- factor(melt_df$lambda_ng_ul, levels = c(1e-04, 1e-05, 1e-06), labels = unique(melt_df$lambda_ng_ul))
 
+lambda_con_1 = unique(melt_df$lambda_ng_ul)[1]
+lambda_con_2 = unique(melt_df$lambda_ng_ul)[2]
+lambda_con_3 = unique(melt_df$lambda_ng_ul)[3]
 
-df1 = melt_df %>% filter(lambda_ng_ul == "1e-04")
-df2 = melt_df %>% filter(lambda_ng_ul == "1e-05")
-df3 = melt_df %>% filter(lambda_ng_ul == "1e-06")
+df1 = melt_df %>% filter(lambda_ng_ul == lambda_con_1)
+df2 = melt_df %>% filter(lambda_ng_ul == lambda_con_2)
+df3 = melt_df %>% filter(lambda_ng_ul == lambda_con_3)
 
 n = length(unique(melt_df$OTU))
 set.seed(1990)
@@ -615,6 +621,6 @@ pl_cp = p1 + p2 + p3 + plot_layout(nrow = 3, widths = 10) + plot_annotation("16S
 ggsave(plot =pl_cp, paste0(out_path,"/", taxa_level, "_copy_number.jpeg"), width = 15, height = 10, dpi =300)
 
 
-  structure(list(copy_corrected_ps = copy_corrected_ps, ps_gloomed = glomed_ps, ps_rel = ps_rel, raw_ps = ps))
+  structure(list(copy_corrected_ps = copy_corrected_ps, ps_gloomed = glomed_ps, ps_rel = ps_rel, raw_ps = ps, suspected_samples = sus_samp))
 
 }

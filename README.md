@@ -2,15 +2,16 @@
 ## An R package to correct relatvie abundance  of sequeneincg reads into 16S rRNA gene copy-number based on an internal Lambda Phage standard.
 
 **This is the supporting package for paper DOIXXXXX**
+
 # Installation
 
-## 1. Isntall and library devtools pakcage on your machine
+## 1. Install and library devtools pakcage on your machine
 ```R
-install.packages("devtools")
+if(!require("devtools")){install.packages("devtools")}
 library(devtools)
 ```
 
-## 2. Download and isntall `lambda_rector`
+## 2. Download and install `lambda_rector`
 ```R
 devtools::install_github("farhadm1990/lambda_rector")
 library(lambda.rector)
@@ -25,7 +26,7 @@ test = lambda_rector(
   negative_cont = NULL,
   negative_filt = TRUE,
   rare_depth = 10000,
-  taxa_level = "Order"
+  taxa_level = "Species"
 )
 
 # This will return a list of differnt phyloseq objects and saves the output plots
@@ -34,11 +35,11 @@ test = lambda_rector(
 
 ![plot1](https://github.com/farhadm1990/lambda_rector/blob/main/pix/plot_without_bad_samples.jpeg)
 
-### Fig2. An example of filtering output of by the package on suspicious samples.
+### Fig1. An example of filtering output by the package on suspicious samples.
 
 ![plot2](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Order_relative.jpeg)
 
-### Fig3. Relative abundance of 16S rRNA gene sequencing reads at order level in different Mock and Lambda concentrations.
+### Fig2. Relative abundance of 16S rRNA gene sequencing reads at order level in different Mock and Lambda concentrations.
 
 ![plot3](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Order_copy_number.jpeg)
 
