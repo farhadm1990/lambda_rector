@@ -1,6 +1,7 @@
-<div style="text-align: center;">
-    <img width="300" height="300" src="https://raw.githubusercontent.com/farhadm1990/lambda_rector/main/pix/logo.jpg" alt="Logo" style="margin: auto;">
+<div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+    <img width="300" height="300" src="https://raw.githubusercontent.com/farhadm1990/lambda_rector/main/pix/logo.jpg" alt="Logo">
 </div>
+
 
 
 
