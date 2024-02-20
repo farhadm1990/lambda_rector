@@ -1,4 +1,5 @@
-![plot1](https://github.com/farhadm1990/lambda_rector/blob/main/pix/logo.jpg)
+<img width="600" height="600" src="https://raw.githubusercontent.com/farhadm1990/lambda_rector/main/pix/logo.jpg" alt="Logo">
+
 
 
 # Lambda Rector
