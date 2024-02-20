@@ -50,7 +50,13 @@ test_ps = lambda_rector(
 
 
 # Extracting the copy-corrected talbe
-cbind(sample_data(test_ps$copy_corrected_ps), test_ps$copy_corrected_matrix) %>% data.frame() %>% rownames_to_column("barcodes") %>% select(-loaded_copy_lambda, -samp_id, -volum_mock, -volum_lambda) %>% group_by(barcodes, lambda_ng_ul, mock_ng_ul) %>% summarise_all(mean) 
+cbind(sample_data(test_ps$copy_corrected_ps), test_ps$copy_corrected_matrix) %>% 
+data.frame() %>% 
+rownames_to_column("barcodes") %>% 
+select(-loaded_copy_lambda, -samp_id, -volum_mock, -volum_lambda) %>% 
+group_by(barcodes, lambda_ng_ul, mock_ng_ul) %>% 
+summarise_all(mean) 
+
 ```
 ## 3. Output examples
 
