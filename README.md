@@ -28,7 +28,8 @@ library(
 ## 2. Download and install `lambda_rector`
 ```R
 devtools::install_github(
-    "farhadm1990/lambda_rector"
+    "farhadm1990/lambda_rector",
+    dependencies=TRUE
     )
 library(
     lambda.rector
