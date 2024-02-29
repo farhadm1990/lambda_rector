@@ -43,6 +43,7 @@ ps = phyloseq(otu_table(count, taxa_are_row = TRUE), tax_table(as(taxa, "matrix"
 ```R
 test_ps = lambda_rector(
                         ps = ps, 
+                        lambda_id = "Lambda",
                         negative_filt= TRUE, 
                         negative_cont = c("BRK79", "BRK87", "BRK95"), 
                         taxa_level = "Genus", 
