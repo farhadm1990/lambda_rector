@@ -1,6 +1,7 @@
 #' Correcting for 16S rRNA copy-number based on Lambda phage standard.
 #' @param ps a raw phyloseq object.
 #' @param lamba_id the taxa name assinged to lambda phage in your tax_table of ps file
+#' @param singletone_threshold number of samples in which one particular taxa should be presented to be considered non-spurious 
 #' @param out_path path to output files
 #' @param negative_cont If you have used negative controls, a vector of negative control sample names. 
 #' @param negative_filt Wheather data should be filtered based on negative control reads
@@ -11,9 +12,9 @@
 
 
 
-
 lambda_rector <- function(ps, 
-                          lamba_id = "Lambda", 
+                          lambda_id = "Lambda",
+                          singletone_threshold = 1, 
                           out_path = "./", 
                           negative_cont = NULL,
                           negative_filt = TRUE, 
@@ -25,6 +26,7 @@ lambda_rector <- function(ps,
 ###############################################################################################
 # ps: a raw phyloseq object
 # lambda_id: the taxa name you have given to lambda during creating the phyloseq object (required)
+# singletone_threshold: number of samples in which one particular taxa should have presented to be considered non-spurious
 # Out_path: path to the output files
 # negative_cont: a vector of the barcode name of the negative control samples.
 # rare_depth: rarefaction depth.
@@ -404,7 +406,7 @@ flush.console()
 # removing negative column
 sample_data(ps)$is_neg <- NULL
 # Removing singletones                      
-if(length((single.test = out.ASV(phyloseq = ps, threshold = 1, binwidth = 0.001))) > 1){
+if(length((single.test = out.ASV(phyloseq = ps, threshold = singletone_threshold, binwidth = 0.001))) > 1){
  
 
 sings <<- single.test[[3]]
@@ -463,7 +465,7 @@ ps_rel <- transform_sample_counts(glomed_ps, function(x){x/sum(x)})
 std_dev_threshold <- std_threshold
 
 
-sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0, Kingdom == "Lambda" ) %>% 
+sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0, Kingdom == lambda_id ) %>% 
  group_by( lambda_ng_ul, mock_ng_ul, Kingdom) %>% 
  arrange(desc(lambda_ng_ul)) %>% 
  mutate( mean_abundance = mean(Abundance, na.rm = TRUE),
@@ -477,7 +479,7 @@ sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul
 
 print(glue("{sus_samp} samples seem to be suspicous and I am going to remove them!\n But first take a look at them in {out_path}"))
 
-p_with = psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0 ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom == "Lambda", "Lambda", "Sample")) %>% ggplot() + 
+p_with = psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0 ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom ==  lambda_id , "Lambda", "Sample")) %>% ggplot() + 
 geom_col(aes(x = Sample, y = mean, fill = Kingdom), position = "stack", show.legend = T) + 
 facet_grid(mock_ng_ul ~ lambda_ng_ul , scales = "free")  + theme_bw()+ 
 theme(axis.text.x = element_text(angle = 45, hjust = 1 )) + 
@@ -487,7 +489,7 @@ ggsave(plot = p_with, paste0(out_path, "/plot_with_bad_samples.jpeg"), height = 
 
 print("Here is how your data looks like wihtout those samples.")
 
-p_without <- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0, !Sample %in% sus_samp ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom == "Lambda", "Lambda", "Sample")) %>% ggplot() + 
+p_without <- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=0.98, Abundance > 0.001, mock_ng_ul > 0.002, lambda_ng_ul > 0, !Sample %in% sus_samp ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom == lambda_id, "Lambda", "Sample")) %>% ggplot() + 
 geom_col(aes(x = Sample, y = mean, fill = Kingdom), position = "stack", show.legend = T) + 
 facet_grid(mock_ng_ul ~ lambda_ng_ul , scales = "free")  + theme_bw()+ 
 theme(axis.text.x = element_text(angle = 45, hjust = 1 )) + 
@@ -512,8 +514,8 @@ if(consent4 == "y"){
 
 # creating matrix multiplication 
 
-lambda_matrix = as(otu_table(glomed_ps)[taxa_names(glomed_ps) == "Lambda",] %>% t(), "matrix")
-samp_matrix = as(otu_table(glomed_ps)[taxa_names(glomed_ps) != "Lambda",] %>% t(), "matrix")
+lambda_matrix = as(otu_table(glomed_ps)[taxa_names(glomed_ps) == lambda_id,] %>% t(), "matrix")
+samp_matrix = as(otu_table(glomed_ps)[taxa_names(glomed_ps) != lambda_id,] %>% t(), "matrix")
 copy_loaded = as(sample_data(glomed_ps) %>% data.frame() %>% select(loaded_copy_lambda) %>% rename( loaded_copy_lambda = "Lambda"), "matrix")
 
 

@@ -6,7 +6,8 @@
 \usage{
 lambda_rector(
   ps,
-  lamba_id = "Lambda",
+  lambda_id = "Lambda",
+  singletone_threshold = 1,
   out_path = "./",
   negative_cont = NULL,
   negative_filt = TRUE,
@@ -18,7 +19,7 @@ lambda_rector(
 \arguments{
 \item{ps}{a raw phyloseq object.}
 
-\item{lamba_id}{the taxa name assinged to lambda phage in your tax_table of ps file}
+\item{singletone_threshold}{number of samples in which one particular taxa should be presented to be considered non-spurious}
 
 \item{out_path}{path to output files}
 
@@ -31,6 +32,8 @@ lambda_rector(
 \item{taxa_level}{Taxonomic level to which analysis should be done.}
 
 \item{std_threshold}{The standard deviation threshold coefficient to find outlier samples withing each technical replicate group.}
+
+\item{lamba_id}{the taxa name assinged to lambda phage in your tax_table of ps file}
 }
 \description{
 Correcting for 16S rRNA copy-number based on Lambda phage standard.
