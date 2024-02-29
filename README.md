@@ -23,6 +23,8 @@ library(
     )
 ```
 
+
+
 ## 2. Download and install `lambda_rector`
 ```R
 devtools::install_github(
@@ -32,8 +34,22 @@ library(
     lambda.rector
     )
 ```
+
+### Alternatively you can clone this repository
+
+```bash
+git clone https://github.com/farhadm1990/lambda_rector.git
+
+
+devtools::install_local("./lambda_rector")
+
+
+```
+
+
 ## 3. Creating a phyloseq object based on test dataset
 ```R
+# In the test subdirecotry of lambda_rector you can find test dataset.
 count = read.table(
     "./lambda.rector/tests/count_test.tsv"
     )
