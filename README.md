@@ -13,43 +13,81 @@
 
 ## 1. Install and library devtools pakcage on your machine
 ```R
-if(!require("devtools")){install.packages("devtools")}
-library(devtools)
+if(
+    !require("devtools")
+    ){
+        install.packages("devtools")
+        }
+library(
+    devtools
+    )
 ```
 
 ## 2. Download and install `lambda_rector`
 ```R
-devtools::install_github("farhadm1990/lambda_rector")
-library(lambda.rector)
+devtools::install_github(
+    "farhadm1990/lambda_rector"
+    )
+library(
+    lambda.rector
+    )
 ```
 ## 3. Creating a phyloseq object based on test dataset
 ```R
-count = read.table("./lambda.rector/tests/count_test.tsv")
-metadata = read.table("./lambda.rector/tests/metadata_test.tsv")
-taxa = read.table("./lambda.rector/tests/taxonomy.tsv", header = F) %>% column_to_rownames("V1") %>% 
-tidyr::separate( col = "V2", sep = ";", into = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")) %>% apply( 2, function(x){gsub("[a-zA-Z]+__", "", x)}) # parssing the taxa column and tidying the names
+count = read.table(
+    "./lambda.rector/tests/count_test.tsv"
+    )
+metadata = read.table(
+    "./lambda.rector/tests/metadata_test.tsv"
+    )
+
+taxa = read.table(
+    "./lambda.rector/tests/taxonomy.tsv", header = F
+    ) %>% 
+    column_to_rownames(
+        "V1"
+        ) %>% 
+tidyr::separate( 
+    col = "V2", sep = ";", 
+    into = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+    ) %>% apply( 
+        2, function(x){
+            gsub("[a-zA-Z]+__", "", x)
+        }
+        ) # parssing the taxa column and tidying the names
 
 #IMPORTANT: giving an arbiterary name to the lambda standard to be passed on to the function later. 
 
-cbind(taxa[,1] %>% data.frame() %>% rename("."="king"), count) %>% group_by(king) %>% summarise_all(sum)
+cbind(
+    taxa[,1] %>% data.frame() %>% rename("."="king"), count
+    ) %>% 
+    group_by(king) %>% 
+    summarise_all(sum)
 
 taxa[taxa[,1]=="Unassigned",] <- "Lambda"
 
-ps = phyloseq(otu_table(count, taxa_are_row = TRUE), tax_table(as(taxa, "matrix")), sample_data(metadata))
+ps = phyloseq(
+    otu_table(
+        count, taxa_are_row = TRUE), 
+        tax_table(as(taxa, "matrix")), 
+        sample_data(metadata)
+        )
 
 ```
 
 ## 4. Rinning `lambda_rector` function
 ```R
 test_ps = lambda_rector(
-                        ps = ps, 
-                        lambda_id = "Lambda",
-                        negative_filt= TRUE, 
-                        negative_cont = c("BRK79", "BRK87", "BRK95"), 
-                        taxa_level = "Genus", 
-                        out_path = "./", 
-                        rare_depth = 10000,
-                        std_threshold = 1.49)
+                        ps, 
+                          lambda_id = "Lambda",
+                          singletone_threshold = 1, 
+                          out_path = "./", 
+                          negative_cont = NULL,
+                          negative_filt = TRUE, 
+                          rare_depth = 10000, 
+                          taxa_level = "Kingdom", 
+                          std_threshold = 1.48
+                          )
 
 
 # This will return a list of differnt phyloseq objects and saves the output plots
