@@ -1,6 +1,6 @@
 Package: lambda.rector
 Title: Convert relative abunace count of 16S rRNA gene data into their copy-number
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: 
     person("Farhad", "M. Panah", , "farhad@food.ku.dk", role = c("aut", "cre"),
            comment = c(ORCID = "https://orcid.org/0000-0002-6623-1528",
