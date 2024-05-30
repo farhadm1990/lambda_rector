@@ -131,6 +131,6 @@ summarise_all(mean)
 
 ### Fig2. Relative abundance of 16S rRNA gene sequencing reads at Genus level in different Mock and Lambda concentrations.
 
-![plot3](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Genus_copy_number.jpeg)
+![plot3](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Genus_copy_number_noLambda.jpeg)
 
 ### Fig3. 16S rRNA gene Copy-number corrected reads at Genus level in different Mock and Lambda concentrations.
