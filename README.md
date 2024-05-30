@@ -100,10 +100,11 @@ test_ps = lambda_rector(
                           singletone_threshold = 1, 
                           out_path = "./", 
                           negative_cont = NULL,
-                          negative_filt = TRUE, 
+                          negative_filt = FALSE, 
                           rare_depth = 10000, 
                           taxa_level = "Kingdom", 
-                          std_threshold = 1.48
+                          std_threshold = 1.48,
+                          rel_abund_threshold = c(0.01,0.99)
                           )
 
 
@@ -126,10 +127,10 @@ summarise_all(mean)
 ![plot1](https://github.com/farhadm1990/lambda_rector/blob/main/pix/plot_without_bad_samples.jpeg)
 ### Fig1. An example of filtering output by the package on suspicious samples.
 
-![plot2](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Order_relative.jpeg)
+![plot2](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Genus_relative.jpeg)
 
-### Fig2. Relative abundance of 16S rRNA gene sequencing reads at order level in different Mock and Lambda concentrations.
+### Fig2. Relative abundance of 16S rRNA gene sequencing reads at Genus level in different Mock and Lambda concentrations.
 
-![plot3](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Order_copy_number.jpeg)
+![plot3](https://github.com/farhadm1990/lambda_rector/blob/main/pix/Genus_copy_number.jpeg)
 
-### Fig3. 16S rRNA gene Copy-number corrected reads at order level in different Mock and Lambda concentrations.
+### Fig3. 16S rRNA gene Copy-number corrected reads at Genus level in different Mock and Lambda concentrations.

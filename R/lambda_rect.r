@@ -16,8 +16,8 @@ lambda_rector <- function(ps,
                           lambda_id = "Lambda",
                           singletone_threshold = 1, 
                           out_path = "./", 
+                          negative_filt = FALSE, 
                           negative_cont = NULL,
-                          negative_filt = TRUE, 
                           rare_depth = 10000, 
                           taxa_level = "Kingdom", 
                           std_threshold = 1.48,
@@ -395,34 +395,42 @@ if(negative_filt == TRUE){
         suspect <- c(contam, negative_otu) %>% as.character()
 
        suspect <<- data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7]) %>% filter(Species !="Lambda") %>% select(suspected_otu) %>% pull() %>% as.character()
-}
-
-
-message(glue("\n\nHere is the list for  {length(suspect)} detected suspected OTUs: \n"))
+       message(glue("\n\n {length(suspect)} detected suspected OTUs in negative samples: \n"))
         
-df = data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7])
+      df = data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7])
 
-print(df)
-flush.console()
+      print(df)
+      flush.console()
+      consent1 = readline(prompt = "Do you want me to remove them? (y/n) ")
 
+      while(!consent1 %in% c("y", "n")){
+        consent1 <- readline(prompt = "Please enter 'y' for yes and 'n' for no: ")
+        
+      }
 
-consent1 = readline(prompt = "Do you want me to remove them? (y/n) ")
+      if(consent1 == "y"){
+        
+        print(suspect)
+        ps <- phyloseq::subset_taxa(ps, !taxa_names(ps) %in% suspect)
+        print("Suspected taxa have been removed. Now I go to the next step! ") 
+      }
+      #removing negative control and empty samples
+      negative_cont <<- negative_cont
+      ps <- subset_samples(ps, !sample_names(ps) %in% negative_cont)
 
-while(!consent1 %in% c("y", "n")){
-  consent1 <- readline(prompt = "Please enter 'y' for yes and 'n' for no: ")
-  
+      sample_data(ps)$is_neg <- NULL
+
 }
 
-if(consent1 == "y"){
-  
-  print(suspect)
-  ps <- phyloseq::subset_taxa(ps, !taxa_names(ps) %in% suspect)
-  print("Suspected taxa have been removed. Now I go to the next step! ") 
-}
 
-#removing negative control and empty samples
+
+
+
+
+
+#removing empty samples
 negative_cont <<- negative_cont
-ps <- subset_samples(ps, !sample_names(ps) %in% negative_cont & sample_data(ps)$lambda_ng_ul > 0 & sample_data(ps)$mock_ng_ul > 0)
+ps <- subset_samples(ps, sample_data(ps)$lambda_ng_ul > 0 & sample_data(ps)$mock_ng_ul > 0)
 
 # Prevalance filtering
 prev <- apply(ps@otu_table, 1, function(x){sum(x>0)})
