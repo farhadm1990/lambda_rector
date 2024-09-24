@@ -16,12 +16,12 @@ lambda_rector <- function(ps,
                           lambda_id = "Lambda",
                           singletone_threshold = 1, 
                           out_path = "./", 
-                          negative_filt = FALSE, 
+                          negative_filt = TRUE, 
                           negative_cont = NULL,
                           rare_depth = 10000, 
                           taxa_level = "Kingdom", 
-                          std_threshold = 1.48,
-                          rel_abund_threshold = c(0.01,0.99)
+                          std_threshold = 1.4,
+                          rel_abund_threshold = c(0.11,0.89)
                           ){
                           
 
@@ -388,13 +388,13 @@ if(negative_filt == TRUE){
         # decontatamination by decontam
         sample_data(ps)$is_neg <- as.logical(ifelse(sample_names(ps) %in% negative_cont, TRUE, FALSE))
 
-        contam <<- isContaminant(ps, method = "prevalence", neg = "is_neg", threshold = 0.1) %>% filter(contaminant == TRUE) %>% rownames()
+        contam <- isContaminant(ps, method = "prevalence", neg = "is_neg", threshold = 0.1) %>% filter(contaminant == TRUE) %>% rownames()
 
-        negative_otu <<-  rownames(tax_table(ps)[colnames(ps@otu_table) %in% negative_cont,])
+        negative_otu <-  rownames(tax_table(ps)[colnames(ps@otu_table) %in% negative_cont,])
         
         suspect <- c(contam, negative_otu) %>% as.character()
 
-       suspect <<- data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7]) %>% filter(Species !="Lambda") %>% select(suspected_otu) %>% pull() %>% as.character()
+       suspect <- data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7]) %>% filter(Species !="Lambda") %>% select(suspected_otu) %>% pull() %>% as.character()
        message(glue("\n\n {length(suspect)} detected suspected OTUs in negative samples: \n"))
         
       df = data.frame(suspected_otu = suspect, Species = tax_table(ps)[taxa_names(ps) %in% suspect,7])
@@ -411,12 +411,12 @@ if(negative_filt == TRUE){
       if(consent1 == "y"){
         
         print(suspect)
-        ps <- phyloseq::subset_taxa(ps, !taxa_names(ps) %in% suspect)
+        ps <- phyloseq::prune_taxa( !taxa_names(ps) %in% suspect, ps)
         print("Suspected taxa have been removed. Now I go to the next step! ") 
       }
       #removing negative control and empty samples
-      negative_cont <<- negative_cont
-      ps <- subset_samples(ps, !sample_names(ps) %in% negative_cont)
+      negative_cont <- negative_cont
+      ps <- phyloseq::prune_samples(!sample_names(ps) %in% negative_cont, ps)
 
       sample_data(ps)$is_neg <- NULL
 
@@ -429,8 +429,8 @@ if(negative_filt == TRUE){
 
 
 #removing empty samples
-negative_cont <<- negative_cont
-ps <- subset_samples(ps, sample_data(ps)$lambda_ng_ul > 0 & sample_data(ps)$mock_ng_ul > 0)
+negative_cont <- negative_cont
+ps <- prune_samples( sample_data(ps)$lambda_ng_ul > 0 & sample_data(ps)$mock_ng_ul > 0, ps)
 
 # Prevalance filtering
 prev <- apply(ps@otu_table, 1, function(x){sum(x>0)})
@@ -448,7 +448,7 @@ sus <<- df %>% filter(sanity == TRUE) %>% select(Phylum) %>% pull()
 print(df)
 flush.console()
 
-      if(!is.null(sus)){
+      if(length(sus)){
 
         consent2 <- readline(prompt = paste0(sus, " phyla are suspected, please double check and tell if I shoudl remove them? (y/n) "))
         
@@ -457,12 +457,13 @@ flush.console()
         }
 
         if(consent2 == "y"){
-
+        
         ps <- subset_taxa(ps, !Phylum %in% sus)
 
 
       }
       }
+      
 
 # removing negative column
 
@@ -471,7 +472,7 @@ sample_data(ps)$is_neg <- NULL
 if(length((single.test = out.ASV(phyloseq = ps, threshold = singletone_threshold, binwidth = 0.001))) > 1){
  
 
-sings <<- single.test[[3]]
+sings <- single.test[[3]]
 
 
   const3 <- readline(prompt = glue("I found {length(sings)} singletones in your dataset, do you want to see their disttribution plot and their names? (y/n) "))
@@ -489,7 +490,7 @@ sings <<- single.test[[3]]
     message("Here is the plot without singletones. ")
     single.test[[2]]
 
-    ps <- subset_taxa(ps, !taxa_names(ps) %in% sings)
+    ps <- prune_taxa(!taxa_names(ps) %in% sings, ps)
     
   }
 }
@@ -501,47 +502,71 @@ sings <<- single.test[[3]]
 # Rarefaction
 print(glue("Rarefying data to {rare_depth} depth! \n"))
 
-ps_rar <<- rarefy_even_depth(ps, sample.size = rare_depth, replace = FALSE)
+ps_rar <- rarefy_even_depth(ps, sample.size = rare_depth, replace = FALSE)
 
 rel <- transform_sample_counts(ps_rar, function(x){x/sum(x)})
 
-#removing taxa with 0.1% and more thatn 98% abundance. 
+#removing taxa with 0.1% and more thatn 90% abundance. 
 
 filt <- prune_taxa( taxa_sums(rel) > rel_abund_threshold[1] &  taxa_sums(rel) < rel_abund_threshold[2], ps_rar)
 
 print(glue("Agglomerating the taxa to {taxa_level} taxonomy level! \n"))
-glomed_ps <- gloomer(filt, taxa_level = taxa_level, NArm = T)
+glomed_ps <<- gloomer(filt, taxa_level = taxa_level, NArm = T)
 
 
 
 print("Transforming sample counts to relative abundance!\n")
 
 
+tmp_ps <<- glomed_ps
+tmp_rel <- transform_sample_counts(tmp_ps, function(x){x/sum(x)})
+
+#indexing the outliers
+ns <- psmelt(tmp_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance > rel_abund_threshold[2],  Abundance < rel_abund_threshold[1]) %>% select(Sample) %>% distinct() %>% pull
 
 
-ps_rel <- transform_sample_counts(glomed_ps, function(x){x/sum(x)})
+ns1 <-  psmelt(tmp_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, 
+Abundance) %>% filter( mock_ng_ul <= 0.002) %>% select(Sample) %>% distinct %>% pull 
+
+ns2 <- psmelt(tmp_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(lambda_ng_ul == 0 ) %>% select(Sample) %>% distinct %>% pull
 
 
 # Removing suspected samples within each lambda concentration group
 
+sm_out <<-  c(ns, ns1,ns2) %>% unique()
+
 std_dev_threshold <- std_threshold
 
 
-sus_samp <<- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=rel_abund_threshold[2], Abundance > rel_abund_threshold[1], mock_ng_ul > 0.002, lambda_ng_ul > 0, Kingdom == lambda_id) %>% 
+sus_samp <- psmelt(tmp_rel) %>% filter(! Sample %in% sm_out) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% 
+filter(Kingdom == "Bacteria", mock_ng_ul > 0.002, lambda_ng_ul >0) %>% 
  group_by( lambda_ng_ul, mock_ng_ul, Kingdom) %>% 
- arrange(desc(lambda_ng_ul)) %>% 
+ #arrange(desc(lambda_ng_ul)) %>% 
  mutate( mean_abundance = mean(Abundance, na.rm = TRUE),
           sd_abundance = sd(Abundance, na.rm = TRUE), 
           is_outlier = abs(Abundance - mean_abundance) > (std_dev_threshold * sd_abundance)
                 ) %>% 
         data.frame() %>% 
         filter(is_outlier) %>% 
-        select(Sample)  %>% 
-        pull() %>% as.character()
+        select(Sample)  %>% distinct %>% 
+        pull() %>% as.character() 
 
-print(glue("{sus_samp} samples seem to be suspicous and I am going to remove them!\n But first take a look at them in {out_path}"))
 
-p_with = psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=rel_abund_threshold[2], Abundance > rel_abund_threshold[1], mock_ng_ul > 0.002, lambda_ng_ul > 0 ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom ==  lambda_id , "Lambda", "Sample")) %>% ggplot() + 
+sm_out <<-  c(ns, ns1,ns2, sus_samp) %>% unique()
+
+print(glue("{data.frame(sm_out)} samples seem to be suspicous and I am going to remove them!\n But first take a look at them in {out_path}"))
+
+dfn <- sample_data(tmp_ps) %>% data.frame()
+
+tmp_ps <<- prune_samples( !sample_names(tmp_ps) %in% sm_out, tmp_ps)
+
+
+tmp_rel <- transform_sample_counts(tmp_ps, function(x){x/sum(x)}) #ps without bad samples
+ps_rel <<- transform_sample_counts(glomed_ps, function(x){x/sum(x)}) # ps with bad samples
+
+# Plot with bad samples
+
+p_with = psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter( mock_ng_ul > 0.002, lambda_ng_ul > 0 ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom ==  lambda_id , "Lambda", "Sample")) %>% ggplot() + 
 geom_col(aes(x = Sample, y = mean, fill = Kingdom), position = "stack", show.legend = T) + 
 facet_grid(mock_ng_ul ~ lambda_ng_ul , scales = "free")  + theme_bw()+ 
 theme(axis.text.x = element_text(angle = 45, hjust = 1 )) + 
@@ -551,7 +576,9 @@ ggsave(plot = p_with, paste0(out_path, "/plot_with_bad_samples.jpeg"), height = 
 
 print("Here is how your data looks like wihtout those samples.")
 
-p_without <- psmelt(ps_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(Abundance <=rel_abund_threshold[2], Abundance > rel_abund_threshold[1], mock_ng_ul > 0.002, lambda_ng_ul > 0, !Sample %in% sus_samp ) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom == lambda_id, "Lambda", "Sample")) %>% ggplot() + 
+# plot without badies 
+
+p_without <- psmelt(tmp_rel) %>% select(Kingdom, Sample, lambda_ng_ul, mock_ng_ul, Abundance) %>% filter(mock_ng_ul > 0.002, lambda_ng_ul > 0) %>% group_by(Sample, lambda_ng_ul, mock_ng_ul, Kingdom) %>% summarise(mean = sum(Abundance), .groups = "drop")%>% mutate(Kingdom = ifelse(Kingdom == lambda_id, "Lambda", "Sample")) %>% ggplot() + 
 geom_col(aes(x = Sample, y = mean, fill = Kingdom), position = "stack", show.legend = T) + 
 facet_grid(mock_ng_ul ~ lambda_ng_ul , scales = "free")  + theme_bw()+ 
 theme(axis.text.x = element_text(angle = 45, hjust = 1 )) + 
@@ -564,16 +591,26 @@ while(!consent4 %in% c("y", "n")){
   consent4 = readline("Please enter y for yes or n for no! ")
 }
 
-glomed_ps <<- glomed_ps
-ps_rel <<- ps_rel
+
+conr1 = rep(TRUE, nrow(sample_data(glomed_ps)))
+conr2 = rep(TRUE, nrow(sample_data(ps_rel)))
+
+d <<- sample_data(glomed_ps) %>% data.frame()
+f <<- sample_data(ps_rel) %>% data.frame()
 
 # Removing suspected samples upon user's consent
 if(consent4 == "y"){
 
-  glomed_ps <- subset_samples(glomed_ps, !sample_names(glomed_ps) %in% sus_samp)
-  ps_rel  <- subset_samples(ps_rel, !sample_names(ps_rel) %in% sus_samp)
+  
+  conr1 <- (!rownames(d) %in% sm_out)
+ 
+ 
+  conr2 <- (!rownames(f) %in% sm_out)
 }
 
+
+glomed_ps <<- prune_samples( conr1, glomed_ps)
+ps_rel  <<- prune_samples( conr2, ps_rel)
 
 
 # creating copy number ps
